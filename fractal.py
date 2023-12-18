@@ -2,6 +2,9 @@ import fullcontrol as fc
 from math import tau, sin
 import numpy as np
 
+lh = 0.2 # layer height
+
+# arcs with height change dont rly make sense, might be best to just do circles
 def grow(maxlength, minlength, maxangle, segments, maxwidth): #length in mm
     # list of length of each segment, descending
     lengthArr = [minlength+(a/(segments-1))*(maxlength-minlength) for a in range(0, segments)][::-1]
