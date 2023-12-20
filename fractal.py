@@ -1,31 +1,72 @@
 import fullcontrol as fc
-from math import tau, sin, cos, tan, radians
-import numpy as np
+from math import tau, sin, cos, tan, radians, pi
+#import numpy as np
 
-lh = 0.2 # layer height
+def circleChain(startPt, endPt, layerHeight): # takes two points, draws circles between them every z of layer height
+    # do a try except thing if the layer height is not compatible with the thing idk, or maybe
+    pass
+
+# would need different algorithm to make it printable, so it prints sequentilaly from lowest to highest. alternatively, just 
+# recursively generating the 3D model and then slicing that would be better
+def grow2(currPt, minLength=2, currAng = 90, length=20, splitAngle = 30):
+    steps = [fc.Extruder(on=False),currPt]
+
+    if length>minLength: # terminates at this angle
+        steps.append(fc.Extruder(on=True))
+
+        currXStep = cos(radians(currAng))*length
+        currZStep = sin(radians(currAng))*length
+
+        steps.append(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep))
+        steps.append(fc.Extruder(on=False))
+
+        # print(f"the length is {currAng}")
+        newLength = length*0.75
+        leftAngle = currAng + splitAngle/2
+        rightAngle = currAng - splitAngle/2
+
+        # turn thingy
+
+
+        # left
+        steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = leftAngle, length=newLength))
+        
+        # right top
+        steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = rightAngle, length=newLength))
+
+        # right bot
+        #steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = rightAngle, length=newLength))
+
+    return steps # steps
+
 
 # arcs with height change dont rly make sense, might be best to just do circles
 def grow(maxlength, minlength, maxangle, segments, maxwidth): #length in mm
     # list of length of each segment, descending
     maxangle = radians(maxangle)
-    lengthArr = [minlength+(a/(segments-1))*(maxlength-minlength) for a in range(0, segments)][::-1]
+    lengthArr = [minlength+(a/(segments-1))*(maxlength-minlength) for a in range(segments)][::-1]
     thicknessArr = [(b/(segments))*maxwidth for b in range(segments+1)][::-1] # length segments + 1
     angleArr = [(c/(segments-1))*maxangle for c in range(segments)]
 
     print(angleArr)
 
-    steps = [fc.Point(x=0,y=0,z=0)]
+    trunk = [fc.Point(x=0,y=0,z=0), fc.Point(x=0,y=0,z=lengthArr[0])]
+
+    steps = []
 
     offset = 0
-    height = 0
+    height = lengthArr[0]
     
     for i in range(len(lengthArr)):
+        steps.append(fc.Extruder(on=True))
         height += cos(angleArr[i])*lengthArr[i]
         offset += sin(angleArr[i])*lengthArr[i]
-        steps = np.append(steps, fc.Point(x=offset,y=0,z=height))
-        steps = fc.move_polar(steps, fc.Point(x=offset,y=0,z=height), 0, tau/6, copy=True, copy_quantity=3)
+        steps.append(fc.Point(x=offset,y=0,z=height))
+        steps.append(fc.Extruder(on=False))
+        steps.extend(fc.move_polar(steps, fc.Point(x=0,y=0,z=0), 0, tau/3, copy=True, copy_quantity=3))
         print(cos(angleArr[i])*lengthArr[i])
-        offset+=1
+
+    trunk.extend(steps)
 
     print(steps)
 
@@ -41,17 +82,8 @@ def grow(maxlength, minlength, maxangle, segments, maxwidth): #length in mm
 
 
 
-    return steps
+    return trunk
 
-# pt1 = fc.Point(x=0,y=0,z=0)
-# pt2 = fc.Point(x=0,y=20,z=0)
-# pt3 = fc.polar_to_point(pt2, -10, tau/8)
-# pt4 = fc.midpoint(pt1, pt2)
-# steps = [pt1, pt2, pt3, pt4]
-# steps.append(fc.PlotAnnotation(point=pt4, label="midpoint between point 1 and point 2"))
-# steps.append(fc.PlotAnnotation(point=pt1, label="point 1"))
-# steps.append(fc.PlotAnnotation(point=pt2, label="point 2"))
-# steps.append(fc.PlotAnnotation(point=pt3, label="point defined by polar coordinates relative to point 2"))
-steps = grow(20, 5, 45, 3, 4)
+steps = grow2(fc.Point(x=0,y=0,z=0))
 # steps = np.append(steps, fc.PlotAnnotation(steps[0], label="point 1"))
 fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style='line'))
