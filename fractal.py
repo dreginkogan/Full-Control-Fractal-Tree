@@ -8,7 +8,7 @@ def circleChain(startPt, endPt, layerHeight): # takes two points, draws circles 
 
 # would need different algorithm to make it printable, so it prints sequentilaly from lowest to highest. alternatively, just 
 # recursively generating the 3D model and then slicing that would be better
-def grow2(currPt, minLength=2, currAng = 90, length=20, splitAngle = 30):
+def grow2(currPt, minLength=2, currAng = 90, currHorAng = 0, length=20, splitAngle = 30):
     steps = [fc.Extruder(on=False),currPt]
 
     if length>minLength: # terminates at this angle
@@ -18,24 +18,16 @@ def grow2(currPt, minLength=2, currAng = 90, length=20, splitAngle = 30):
         currZStep = sin(radians(currAng))*length
 
         steps.append(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep))
-        steps.append(fc.Extruder(on=False))
 
-        # print(f"the length is {currAng}")
         newLength = length*0.75
         leftAngle = currAng + splitAngle/2
         rightAngle = currAng - splitAngle/2
 
-        # turn thingy
-
-
         # left
         steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = leftAngle, length=newLength))
         
-        # right top
+        # right
         steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = rightAngle, length=newLength))
-
-        # right bot
-        #steps.extend(grow2(fc.Point(x=currPt.x + currXStep,y=0,z=currPt.z + currZStep), currAng = rightAngle, length=newLength))
 
     return steps # steps
 
